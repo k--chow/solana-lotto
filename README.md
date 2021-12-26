@@ -13,3 +13,47 @@ $ cargo test
 $ cargo build-bpf
 $ cargo test-bpf
 ```
+
+## Deploy
+
+Might need to do this:
+
+```bash
+solana config set --url localhost
+solana-keygen new
+```
+
+```bash
+# In one terminal tab
+solana-test-validator
+# In another tab
+solana program deploy ./target/deploy/solana_lottery.so
+```
+
+Might also need:
+
+```bash
+# check your config
+solana config get
+# Copy-paste your key from /Users/USER/.config/solana/cli/config.yml to the managerSecretKey definition in the client
+```
+
+## Node command
+
+You have to set CONNECTION and PROGRAM_ID. Either in a file or as args.
+
+In a file:
+
+```bash
+# js/.env:
+CONNECTION=local
+PROGRAM_ID=BXvetcetcetcrm
+# then run
+. .env && node build/bindings.js
+```
+
+As args:
+
+```bash
+CONNECTION=local PROGRAM_ID=BXvetcetcetcrm node build/bindings.js
+```
