@@ -35,12 +35,12 @@ Might also need:
 ```bash
 # check your config
 solana config get
-# Copy-paste your key from /Users/USER/.config/solana/cli/config.yml to the managerSecretKey definition in the client
+# Copy-paste your key file defined in  /Users/USER/.config/solana/cli/config.yml to `js/`
 ```
 
 ## Node command
 
-You have to set CONNECTION and PROGRAM_ID. Either in a file or as args.
+You have to set CONNECTION and PROGRAM_ID. Either in a file or as args. And drop your id.json file into the folder as stated above.
 
 In a file:
 
