@@ -11,7 +11,8 @@
   "dependencies": {
     "@solana/spl-token": "^0.1.8",
     "@solana/web3.js": "^1.29.1",
-    "bn.js": "^5.2.0"
+    "bn.js": "^5.2.0",
+    "buffer-layout": "^1.2.2"
   },
   "devDependencies": {
     "@types/bs58": "^4.0.1",
