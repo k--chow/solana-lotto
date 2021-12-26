@@ -3,7 +3,6 @@
   "version": "1.0.0",
   "description": "",
   "main": "bindings.js",
-  "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "go": "npm run compile && npm build/bindings.js",

@@ -6,10 +6,13 @@ import {
   TransactionInstruction,
   Transaction,
   clusterApiUrl,
+  Keypair,
+  AccountInfo,
 } from '@solana/web3.js';
 
 
 
+// @ts-expect-error
 import * as BufferLayout from "buffer-layout";
 
 export const publicKey = (
@@ -24,7 +27,7 @@ export const participants = (
   return BufferLayout.unionBufferLayout.blob(32, property);
 };
 
-const programId = "24PRzCJfPmXbLy6zgrFZjf4w4XuaQ3Mhc6grdi6A2UNM";
+const programId: PublicKey = new PublicKey("24PRzCJfPmXbLy6zgrFZjf4w4XuaQ3Mhc6grdi6A2UNM");
 
 const connectionURL = "https://api.devnet.solana.com";
 // define keypairs
@@ -45,7 +48,7 @@ export const LOTTERY_ACCOUNT_DATA_LAYOUT = BufferLayout.struct([
   BufferLayout.u8("p_current_idx"),
 ]);
 
-const initLottery = async (managerKeypair, lotteryProgramId) => {
+const initLottery = async (managerKeypair: Keypair, lotteryProgramId: PublicKey) => {
     
     // manager keypair
     //const connection = new Connection(connectionURL, "confirmed");
@@ -98,9 +101,8 @@ const initLottery = async (managerKeypair, lotteryProgramId) => {
         process.exit(1);
     }
 
-    const encodedLotteryState = lotteryAccount.data;
 
-    const decodedLotteryState = decodeLotteryState(encodedLotteryState)
+    const decodedLotteryState = decodeLotteryState(lotteryAccount);
         
     if (!decodedLotteryState.isInitialized) {
         console.log("Lottery state initialization flag has not been set");
@@ -127,16 +129,16 @@ const drawLottery = async() => {
 
 }*/
 
-export const decodelotteryState = (encodedLotteryState) => {
+export function decodeLotteryState(encodedLotteryState: AccountInfo<Buffer>) {
     const decodedLotteryState = LOTTERY_ACCOUNT_DATA_LAYOUT.decode(encodedLotteryState.data);
     let participants = decodedLotteryState.participants
-        .map(participant => new PublicKey(participant).toBase58());
+        .map((participant: PublicKey) => new PublicKey(participant).toBase58());
     return {
         isInitialized: decodedLotteryState.isInitialized,
         managerPubkey: decodedLotteryState.managerPubkey.toBase58(),
         participants: participants,
         p_current_idx: decodedLotteryState.p_current_idx,
-    }
+    };
 }
 
 initLottery(managerKeypair, programId);
