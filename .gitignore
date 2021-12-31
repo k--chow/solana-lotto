@@ -4,3 +4,6 @@
 js/node_modules
 js/package-lock.json
 js/build
+test-ledger
+
+js/id.json
