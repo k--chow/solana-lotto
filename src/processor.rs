@@ -47,6 +47,9 @@ impl Processor {
         accounts: &[AccountInfo],
         program_id: &Pubkey,
     ) -> ProgramResult {
+        // check program id
+
+
         let account_info_iter = &mut accounts.iter();
         // manager
         let initializer = next_account_info(account_info_iter)?;
@@ -57,6 +60,11 @@ impl Processor {
 
         // generated key pair (for program's account)
         let lottery_account = next_account_info(account_info_iter)?;
+
+        if lottery_account.owner != program_id {
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
         let rent = &Rent::from_account_info(next_account_info(account_info_iter)?)?;
 
         if !rent.is_exempt(lottery_account.lamports(), lottery_account.data_len()) {
@@ -75,7 +83,6 @@ impl Processor {
         Lottery::pack(lottery_info, &mut lottery_account.try_borrow_mut_data()?)?;
         // ??
 
-
         Ok(())
     }
 
@@ -83,6 +90,7 @@ impl Processor {
         accounts: &[AccountInfo],
         program_id: &Pubkey,
     ) -> ProgramResult {
+        
         let account_info_iter = &mut accounts.iter();
         // initializer
         let player = next_account_info(account_info_iter)?;
@@ -90,29 +98,38 @@ impl Processor {
         if !player.is_signer {
             return Err(ProgramError::MissingRequiredSignature);
         }
+
+       
+
         // for instructions
         let system_program_account = next_account_info(account_info_iter)?;
 
-        // pda account
-        let pda_account = next_account_info(account_info_iter)?;
-        
-        let (pda, nonce) = Pubkey::find_program_address(&[b"escrow"], program_id);
-        
+        let buyIn = 1000000000;
         // check if enough sol to transfer, check for errors
         // https://github.com/solana-labs/solana-program-library/blob/master/examples/rust/transfer-lamports/src/processor.rs
 
-        if player.lamports() < 1 {
+        if player.lamports() < buyIn {
             return Err(ProgramError::InsufficientFunds);
         }
 
-        let instruction = system_instruction::transfer(&player.key, &pda_account.key, 1);
+        let lottery_account = next_account_info(account_info_iter)?;
 
+        // check program id
+        if lottery_account.owner != program_id {
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
+        // make sure lotto not full already!
+
+        // try other way
+        let instruction = system_instruction::transfer(&player.key, &lottery_account.key, buyIn);
+        // ???
         invoke(
             &instruction,
             &[
-                system_program_account.clone(),
-                pda_account.clone(),
                 player.clone(),
+                lottery_account.clone(),
+                system_program_account.clone(),
             ],
         )?;
 
@@ -127,11 +144,13 @@ impl Processor {
         // add to participants
 
         // generated key pair (for program's account)
-        let lottery_account = next_account_info(account_info_iter)?;
+        
 
         let mut lottery_info = Lottery::unpack(&lottery_account.try_borrow_data()?)?;
 
         lottery_info.add(*player.key);
+
+        Lottery::pack(lottery_info, &mut lottery_account.data.borrow_mut())?;
 
         Ok(())
 
@@ -141,6 +160,10 @@ impl Processor {
         accounts: &[AccountInfo],
         program_id: &Pubkey,
     ) -> ProgramResult {
+        // check program id
+
+        
+
         // give it to number one guy for now
         let account_info_iter = &mut accounts.iter();
         let initializer = next_account_info(account_info_iter)?;
@@ -149,10 +172,21 @@ impl Processor {
             return Err(ProgramError::MissingRequiredSignature);
         }
 
-        // generated key pair (for program's account)
+        
         let lottery_account = next_account_info(account_info_iter)?;
 
+        // check program id
+        if lottery_account.owner != program_id {
+            return Err(ProgramError::IncorrectProgramId);
+        }
+
         let lottery_info = Lottery::unpack(&lottery_account.try_borrow_data()?)?;
+
+        // make sure 3 players inside
+
+        if lottery_info.p_current_idx != 3 {
+            return Err(ProgramError::InvalidAccountData) // need a better custom error
+        }
 
         // chcek tht initializer is manager
 
@@ -160,32 +194,37 @@ impl Processor {
             return Err(ProgramError::InvalidAccountData);
         }
 
-        // draw and transfer from pda to winner
-
-        let (pda, nonce) = Pubkey::find_program_address(&[b"escrow"], program_id);
-
-        // pda account pubkey
-        let pda_account = next_account_info(account_info_iter)?;
 
         // for instructions
-        let system_program_account = next_account_info(account_info_iter)?;
+        //let system_program_account = next_account_info(account_info_iter)?;
+        
         // should take from participants list, get account
         let winner = initializer;
         
+        /*
         let instruction = system_instruction::transfer(&winner.key, &pda_account.key, lottery_info.participants.len().try_into().unwrap());
 
         invoke_signed(
             &instruction,
             &[
-                system_program_account.clone(),
-                pda_account.clone(),
+                lottery_account.clone(),
                 winner.clone(),
+                system_program_account.clone(),
             ],
             &[&[&b"lottery"[..], &[nonce]]],
-        )?;
+        )?;*/
 
+        //**winner.lamports.borrow_mut() = winner.lamports().checked_add(lottery_account.lamports()).ok_or(ProgramError::InvalidAccountData);
+
+        **winner.try_borrow_mut_lamports()? += lottery_account.lamports();
+
+        // does this shut things down? 
+        **lottery_account.lamports.borrow_mut() = 0;  // try setting it to more
+        *lottery_account.try_borrow_mut_data()? = &mut [];
         // close pda account or no?
         // close lottery account or no?
+
+        
 
         Ok(())
     }
